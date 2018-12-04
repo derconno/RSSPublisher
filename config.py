@@ -2,7 +2,7 @@ import pickle
 
 secret = '123456789'
 ip = '127.0.0.1'
-port = 8080
+port = 8000
 title = 'RSS Server Event Feed'
 link = 'https://conno.ddns.net/'
 description = 'This is the event feed of the server. It collects the events of different applications and publishes them here.'
