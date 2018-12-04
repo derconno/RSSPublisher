@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 
 import PyRSS2Gen
 
@@ -17,7 +18,15 @@ class Feed:
                                  link=link,
                                  description=description,
                                  author=author,
-                                 guid=PyRSS2Gen.Guid(title + link, False),
+                                 guid=PyRSS2Gen.Guid(
+                                     hashlib.sha1(
+                                         (title +
+                                          link +
+                                          description +
+                                          author +
+                                          datetime.datetime.utcnow().strftime(
+                                              "%Y-%m-%d %H:%M:%S")).encode()).hexdigest(),
+                                     False),
                                  pubDate=datetime.datetime.utcnow())
         self.items.insert(0, item)
         config.save_items(self.items)
