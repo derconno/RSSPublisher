@@ -6,6 +6,7 @@ port = 8000
 title = 'RSS Server Event Feed'
 link = 'https://conno.ddns.net/'
 description = 'This is the event feed of the server. It collects the events of different applications and publishes them here.'
+max_items = 50
 
 
 def get_items():
