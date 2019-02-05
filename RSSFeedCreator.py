@@ -48,8 +48,8 @@ class Feed:
                                      False),
                                  pubDate=datetime.datetime.utcnow())
         self.items.insert(0, item)
-        self.items = self.items[:config.max_items]
-        config.save_items(self.items)
+        self.items = self.items[:config.config['DEFAULT']['max_items']]
+        config.config.save_items(self.items)
 
     def write(self, file):
         rss = PyRSS2Gen.RSS2(

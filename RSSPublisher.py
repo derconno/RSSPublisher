@@ -17,6 +17,31 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##
+import argparse
+import os
+
+import config
+
+parser = argparse.ArgumentParser(
+    description="""Publish events to a RSS feed.
+    
+    RSSPublisher  Copyright (C) 2019  Constantin Schwarz
+
+    This program comes with ABSOLUTELY NO WARRANTY.
+    This is free software, and you are welcome to redistribute it
+    under certain conditions; see LICENSE for details.\n
+""")
+
+parser.add_argument('-c', '--config', default='config.ini', help='config file, defaults to config.ini')
+
+args = vars(parser.parse_args())
+
+if os.path.isfile(args['config']):
+    config.read_config(args['config'])
+else:
+    os.makedirs(os.path.dirname(args['config']))
+    config.default_config(args['config'])
+
 import RSSServer
 
 server = RSSServer.RSSServer()
