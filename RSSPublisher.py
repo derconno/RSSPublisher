@@ -39,7 +39,8 @@ args = vars(parser.parse_args())
 if os.path.isfile(args['config']):
     config.read_config(args['config'])
 else:
-    os.makedirs(os.path.dirname(args['config']))
+    if not os.path.dirname(args['config']) == '':
+        os.makedirs(os.path.dirname(args['config']))
     config.default_config(args['config'])
 
 import RSSServer
