@@ -43,9 +43,8 @@ else:
         os.makedirs(os.path.dirname(args['config']))
     config.default_config(args['config'])
 
-import RSSServer
-
-server = RSSServer.RSSServer()
+import socket, time
+from RSSServer import RSSServer
 
 try:
     print("""
@@ -56,7 +55,16 @@ try:
     under certain conditions; see LICENSE for details.\n
     """)
     print('Server started on default port')
-    server.start_server()
+
+    addr = (config.config['DEFAULT']['ip'], int(config.config['DEFAULT']['port']))
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(addr)
+    sock.listen(5)
+
+    [RSSServer(addr, sock) for i in range(int(config.config['DEFAULT']['threads']))]
+    time.sleep(9e9)
+
 except KeyboardInterrupt:
     print('stopping server')
-    server.stop_server()
+    quit(0)

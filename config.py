@@ -33,7 +33,8 @@ def default_config(path):
         'title': 'RSS Event Feed',
         'link': 'http://127.0.0.1:8000/feed.xml',
         'description': 'This is the event feed of the server. It collects the events of different applications and publishes them here.',
-        'max_items': '50'
+        'max_items': '50',
+        'threads': '100'
     }
     with open(path, 'w') as cfgfile:
         config.write(cfgfile)

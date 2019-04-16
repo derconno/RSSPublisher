@@ -19,6 +19,7 @@
 ##
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from os import path
+from threading import Thread
 from urllib import parse as urlparse
 
 import RSSFeedCreator
@@ -97,21 +98,19 @@ class RSSServer_RequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(open(path.join('sites', '404.html'), 'rb').read())
         return
 
-class RSSServer():
 
-    def __init__(self):
-        self.running = False
+class RSSServer(Thread):
 
-    def start_server(self, ip=config.config['DEFAULT']['ip'], port=int(config.config['DEFAULT']['port'])):
-        if self.running == False:
-            self.server_address = (ip, port)
-            self.httpd = HTTPServer(self.server_address, RSSServer_RequestHandler)
-            self.running = True
-            self.httpd.serve_forever()
-        return
+    def __init__(self, addr, sock):
+        Thread.__init__(self)
+        self.addr = addr
+        self.sock = sock
+        self.daemon = True
+        self.start()
 
-    def stop_server(self):
-        if self.running:
-            self.running = False
-            self.httpd.shutdown()
-        return
+    def run(self):
+        httpd = HTTPServer(self.addr, RSSServer_RequestHandler, False)
+        httpd.socket = self.sock
+        httpd.server_bind = self.server_close = lambda self: None
+
+        httpd.serve_forever()
