@@ -40,7 +40,7 @@ if os.path.isfile(args['config']):
     config.read_config(args['config'])
 else:
     if not os.path.dirname(args['config']) == '':
-        os.makedirs(os.path.dirname(args['config']))
+        os.makedirs(os.path.dirname(args['config']), exist_ok=True)
     config.default_config(args['config'])
 
 import socket, time
