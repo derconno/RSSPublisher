@@ -22,24 +22,20 @@ from os import path
 from threading import Thread
 from urllib import parse as urlparse
 
-import RSSFeedCreator
-import config
+from FeedManager import FeedManager
 
-fc = RSSFeedCreator.Feed(title=config.config['DEFAULT']['title'], link=config.config['DEFAULT']['link'],
-                         description=config.config['DEFAULT']['description'], items=config.get_items())
-fc.write(path.join('sites', 'feed.xml'))
+fm = FeedManager()
+
 
 class RSSServer_RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
 
         if self.path == '/feed.xml':
+            # legacy compatiblity
+            self.send_response(301)
 
-            self.send_response(200)
-
-            self.send_header('Content-type', 'application/xhtml+xml')
+            self.send_header('Location', '/feed?id=0')
             self.end_headers()
-
-            self.wfile.write(open(path.join('sites', 'feed.xml'), 'rb').read())
 
         elif self.path == '/post.html':
 
@@ -50,13 +46,28 @@ class RSSServer_RequestHandler(BaseHTTPRequestHandler):
 
             self.wfile.write(open(path.join('sites', 'post.html'), 'rb').read())
 
-        else:
-            self.send_response(404)
+        elif self.path.startswith("/feed?"):
 
-            self.send_header('Content-type', 'text/html')
+            try:
+                args = dict(arg.split('=', 1) for arg in self.path[6:].split('&'))
+            except ValueError:
+                self.respond_404()
+                return
+
+            if not 'id' in args.keys():
+                self.respond_404()
+                return
+
+            xml = fm.getFeed(args['id'])
+
+            self.send_response(200)
+
+            self.send_header('Content-type', 'application/xhtml+xml')
             self.end_headers()
 
-            self.wfile.write(open(path.join('sites', '404.html'), 'rb').read())
+            self.wfile.write(bytes(xml, 'utf-8'))
+        else:
+            self.respond_404()
         return
 
     def do_POST(self):
@@ -71,32 +82,39 @@ class RSSServer_RequestHandler(BaseHTTPRequestHandler):
                 v = v.replace('+', ' ')
                 data[urlparse.unquote(k)] = urlparse.unquote(v)
 
-            if data['secret'] == config.config['DEFAULT']['secret']:
+            if 'id' in data.keys():
+                id = data['id']
+            else:
+                id = 0
+
+            if fm.isValidSecret(id, data['secret']):
                 self.send_response(200)
 
                 self.end_headers()
                 self.wfile.write(b'success\n')
 
-                fc.add_Item(title=data['title'],
-                            link=data['link'],
-                            description=data['description'],
-                            author=data['author'])
-
-                fc.write(path.join('sites', 'feed.xml'))
+                fm.addItem(id,
+                           title=data['title'],
+                           link=data['link'],
+                           description=data['description'],
+                           author=data['author'])
             else:
-                self.send_response(200)
+                self.send_response(403)
 
                 self.end_headers()
-                self.wfile.write(b'error\n')
+                self.wfile.write(b'unauthorized\n')
 
         else:
-            self.send_response(404)
-
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-
-            self.wfile.write(open(path.join('sites', '404.html'), 'rb').read())
+            self.respond_404()
         return
+
+    def respond_404(self):
+        self.send_response(404)
+
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+
+        self.wfile.write(open(path.join('sites', '404.html'), 'rb').read())
 
 
 class RSSServer(Thread):

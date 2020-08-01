@@ -19,18 +19,21 @@
 ##
 import datetime
 import hashlib
+import os
+import pickle
 
 import PyRSS2Gen
 
-import config
-
-
 class Feed:
-    def __init__(self, title, link, description, items=[]):
+    def __init__(self, title, link, description, itemsfile, items=None, maxitems=50):
+        if items is None:
+            items = []
         self.title = title
         self.link = link
         self.description = description
         self.items = items
+        self.maxitems = maxitems
+        self.itemsfile = itemsfile
 
     def add_Item(self, title, link, description, author):
         item = PyRSS2Gen.RSSItem(title=title,
@@ -48,10 +51,9 @@ class Feed:
                                      False),
                                  pubDate=datetime.datetime.utcnow())
         self.items.insert(0, item)
-        self.items = self.items[:int(config.config['DEFAULT']['max_items'])]
-        config.save_items(self.items)
+        self.items = self.items[:self.maxitems]
 
-    def write(self, file):
+    def getXml(self):
         rss = PyRSS2Gen.RSS2(
             title=self.title,
             link=self.link,
@@ -59,4 +61,11 @@ class Feed:
             lastBuildDate=datetime.datetime.now(),
             items=self.items
         )
-        rss.write_xml(open(file, "w"))
+        return rss.to_xml('utf-8')
+
+    def saveItems(self):
+        if not os.path.dirname(self.itemsfile) == '':
+            os.makedirs(os.path.dirname(self.itemsfile), exist_ok=True)
+        f = open(self.itemsfile, 'wb')
+        pickle.dump(self.items, f)
+        f.close()

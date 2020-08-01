@@ -44,7 +44,7 @@ else:
     config.default_config(args['config'])
 
 import socket, time
-from RSSServer import RSSServer
+from Server import RSSServer
 
 try:
     print("""

@@ -18,7 +18,6 @@
 ## along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##
 import configparser
-import pickle
 
 config = None
 
@@ -27,14 +26,10 @@ def default_config(path):
     global config
     config = configparser.ConfigParser()
     config['DEFAULT'] = {
-        'secret': '123456789',
         'ip': '127.0.0.1',
         'port': '8000',
-        'title': 'RSS Event Feed',
-        'link': 'http://127.0.0.1:8000/feed.xml',
-        'description': 'This is the event feed of the server. It collects the events of different applications and publishes them here.',
-        'max_items': '50',
-        'threads': '100'
+        'threads': '100',
+        'feeds': 'feeds.ini'
     }
     with open(path, 'w') as cfgfile:
         config.write(cfgfile)
@@ -44,18 +39,3 @@ def read_config(path):
     global config
     config = configparser.ConfigParser()
     config.read(path)
-
-def get_items():
-    try:
-        f = open('items', 'rb')
-        items = pickle.load(f)
-        f.close()
-    except:
-        items = []
-    return items
-
-
-def save_items(items):
-    f = open('items', 'wb')
-    pickle.dump(items, f)
-    f.close()
