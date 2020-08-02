@@ -63,7 +63,6 @@ class FeedManager():
                 itemsfile='/dev/null',
                 maxitems=0
             )
-            self.secrets['0'] = 'any'
 
     def getFeed(self, id):
         if id in self.feeds.keys():
