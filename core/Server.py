@@ -17,6 +17,8 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##
+import os
+import sys
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from os import path
@@ -26,9 +28,7 @@ from urllib import parse as urlparse
 from core.FeedManager import FeedManager
 
 
-def RSSRequestHandlerFactory():
-    fm = FeedManager()
-
+def RSSRequestHandlerFactory(fm: FeedManager):
     class RSSRequestHandler(BaseHTTPRequestHandler):
 
         def do_GET(self):
@@ -47,7 +47,7 @@ def RSSRequestHandlerFactory():
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
 
-                self.wfile.write(open(path.join('../sites', 'post.html'), 'rb').read())
+                self.wfile.write(open(path.join('sites', 'post.html'), 'rb').read())
 
             elif self.path.startswith("/feed?"):
 
@@ -118,7 +118,7 @@ def RSSRequestHandlerFactory():
             self.send_header('Content-type', 'text/html')
             self.end_headers()
 
-            self.wfile.write(open(path.join('../sites', '404.html'), 'rb').read())
+            self.wfile.write(open(path.join('sites', '404.html'), 'rb').read())
 
     return RSSRequestHandler
 

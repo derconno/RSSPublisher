@@ -41,7 +41,7 @@ class Feed:
         self.itemsfile = itemsfile
         self.filters = filters
 
-    def add_Item(self, title, link, description, author):
+    def add_Item(self, title, link, description, author, pubDate=datetime.datetime.utcnow()):
         item = PyRSS2Gen.RSSItem(title=title,
                                  link=link,
                                  description=description,
@@ -52,10 +52,10 @@ class Feed:
                                           link +
                                           description +
                                           author +
-                                          datetime.datetime.utcnow().strftime(
+                                          pubDate.strftime(
                                               "%Y-%m-%d %H:%M:%S")).encode()).hexdigest(),
                                      False),
-                                 pubDate=datetime.datetime.utcnow())
+                                 pubDate=pubDate)
         item = self._apply_filters(item)
         if not item == None:
             self.items.insert(0, item)
@@ -85,3 +85,10 @@ class Feed:
                     return None
                 item = filter.modify(item)
         return item
+
+    def get_latest_item_pubDate(self) -> datetime:
+        latest = datetime.datetime.fromordinal(1)
+        for item in self.items:
+            if item.pubDate > latest:
+                latest = item.pubDate
+        return latest

@@ -23,6 +23,8 @@ import socket
 import time
 
 from core import config
+from core.FeedManager import FeedManager
+from core.FeedUpdater import Updater
 
 from core.Server import RSSServer, RSSRequestHandlerFactory
 
@@ -63,9 +65,12 @@ try:
     sock.bind(addr)
     sock.listen(5)
 
-    handler = RSSRequestHandlerFactory()
+    fm = FeedManager()
+    handler = RSSRequestHandlerFactory(fm)
 
     [RSSServer(addr, sock, handler) for i in range(int(config.config['DEFAULT']['threads']))]
+    Updater(fm)
+
     time.sleep(9e9)
 
 except KeyboardInterrupt:

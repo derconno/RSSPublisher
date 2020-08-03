@@ -31,6 +31,7 @@ class FeedManager:
     def __init__(self):
         self.secrets = {}
         self.feeds = {}
+        self.polling_feeds = {}
         self.feedConfig = ConfigParser()
         if os.path.isfile(config.config['DEFAULT']['feeds']):
             self.feedConfig.read(config.config['DEFAULT']['feeds'], 'utf-8')
@@ -45,6 +46,7 @@ class FeedManager:
             max_items = self.feedConfig[section].getint('max_items')
             itemsfile = self.feedConfig[section].get('items file')
             filter_classes = ast.literal_eval(self.feedConfig[section].get('filters', '[]'))
+            type = self.feedConfig[section].get('type', 'post').strip().lower()
             filters = []
             try:
                 f = open(itemsfile, 'rb')
@@ -60,6 +62,8 @@ class FeedManager:
                 filters.append(fclass())
 
             feed = Feed(title, link, description, itemsfile, items=items, maxitems=max_items, filters=filters)
+            if type == 'poll':
+                self.polling_feeds[id] = feed
             self.feeds[id] = feed
 
             self.secrets[id] = self.feedConfig[section].get('secret')
@@ -93,3 +97,6 @@ class FeedManager:
             return secret == self.secrets[id]
         else:
             return False
+
+    def get_polling_feeds(self):
+        return self.polling_feeds
