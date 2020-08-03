@@ -118,3 +118,5 @@ dmypy.json
 items
 config.ini
 feeds.ini
+filters/*
+!filters/__init__.py

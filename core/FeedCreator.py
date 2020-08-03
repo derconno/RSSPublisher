@@ -24,8 +24,13 @@ import pickle
 
 import PyRSS2Gen
 
+from filters import BaseFilter
+
+
 class Feed:
-    def __init__(self, title, link, description, itemsfile, items=None, maxitems=50):
+    def __init__(self, title, link, description, itemsfile, items=None, maxitems=50, filters=None):
+        if filters is None:
+            filters = []
         if items is None:
             items = []
         self.title = title
@@ -34,6 +39,7 @@ class Feed:
         self.items = items
         self.maxitems = maxitems
         self.itemsfile = itemsfile
+        self.filters = filters
 
     def add_Item(self, title, link, description, author):
         item = PyRSS2Gen.RSSItem(title=title,
@@ -50,8 +56,10 @@ class Feed:
                                               "%Y-%m-%d %H:%M:%S")).encode()).hexdigest(),
                                      False),
                                  pubDate=datetime.datetime.utcnow())
-        self.items.insert(0, item)
-        self.items = self.items[:self.maxitems]
+        item = self._apply_filters(item)
+        if not item == None:
+            self.items.insert(0, item)
+            self.items = self.items[:self.maxitems]
 
     def getXml(self):
         rss = PyRSS2Gen.RSS2(
@@ -69,3 +77,11 @@ class Feed:
         f = open(self.itemsfile, 'wb')
         pickle.dump(self.items, f)
         f.close()
+
+    def _apply_filters(self, item):
+        for filter in self.filters:
+            if isinstance(filter, BaseFilter):
+                if not filter.accept(item):
+                    return None
+                item = filter.modify(item)
+        return item

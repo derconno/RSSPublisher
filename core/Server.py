@@ -17,12 +17,13 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##
+from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from os import path
 from threading import Thread
 from urllib import parse as urlparse
 
-from FeedManager import FeedManager
+from core.FeedManager import FeedManager
 
 
 def RSSRequestHandlerFactory():
@@ -34,19 +35,19 @@ def RSSRequestHandlerFactory():
 
             if self.path == '/feed.xml':
                 # legacy compatiblity
-                self.send_response(301)
+                self.send_response(HTTPStatus.MOVED_PERMANENTLY)
 
                 self.send_header('Location', '/feed?id=0')
                 self.end_headers()
 
             elif self.path == '/post.html':
 
-                self.send_response(200)
+                self.send_response(HTTPStatus.OK)
 
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
 
-                self.wfile.write(open(path.join('sites', 'post.html'), 'rb').read())
+                self.wfile.write(open(path.join('../sites', 'post.html'), 'rb').read())
 
             elif self.path.startswith("/feed?"):
 
@@ -56,13 +57,13 @@ def RSSRequestHandlerFactory():
                     self.respond_404()
                     return
 
-                if not 'id' in args.keys():
+                if 'id' not in args.keys():
                     self.respond_404()
                     return
 
                 xml = fm.getFeed(args['id'])
 
-                self.send_response(200)
+                self.send_response(HTTPStatus.OK)
 
                 self.send_header('Content-type', 'application/xhtml+xml')
                 self.end_headers()
@@ -91,7 +92,7 @@ def RSSRequestHandlerFactory():
                     id = 0
 
                 if fm.isValidSecret(id, data['secret']):
-                    self.send_response(200)
+                    self.send_response(HTTPStatus.OK)
 
                     self.end_headers()
                     self.wfile.write(b'success\n')
@@ -102,7 +103,7 @@ def RSSRequestHandlerFactory():
                                description=data['description'],
                                author=data['author'])
                 else:
-                    self.send_response(403)
+                    self.send_response(HTTPStatus.UNAUTHORIZED)
 
                     self.end_headers()
                     self.wfile.write(b'unauthorized\n')
@@ -112,28 +113,28 @@ def RSSRequestHandlerFactory():
             return
 
         def respond_404(self):
-            self.send_response(404)
+            self.send_response(HTTPStatus.NOT_FOUND)
 
             self.send_header('Content-type', 'text/html')
             self.end_headers()
 
-            self.wfile.write(open(path.join('sites', '404.html'), 'rb').read())
+            self.wfile.write(open(path.join('../sites', '404.html'), 'rb').read())
 
     return RSSRequestHandler
 
 
 class RSSServer(Thread):
 
-    def __init__(self, addr, sock):
+    def __init__(self, addr, sock, handler):
         Thread.__init__(self)
         self.addr = addr
         self.sock = sock
         self.daemon = True
+        self.handler = handler
         self.start()
 
     def run(self):
-        handler = RSSRequestHandlerFactory()
-        httpd = HTTPServer(self.addr, handler, False)
+        httpd = HTTPServer(self.addr, self.handler, False)
         httpd.socket = self.sock
         httpd.server_bind = self.server_close = lambda self: None
 

@@ -19,8 +19,12 @@
 ##
 import argparse
 import os
+import socket
+import time
 
-import config
+from core import config
+
+from core.Server import RSSServer, RSSRequestHandlerFactory
 
 parser = argparse.ArgumentParser(
     description="""Publish events to a RSS feed.
@@ -43,9 +47,6 @@ else:
         os.makedirs(os.path.dirname(args['config']), exist_ok=True)
     config.default_config(args['config'])
 
-import socket, time
-from Server import RSSServer
-
 try:
     print("""
     RSSPublisher  Copyright (C) 2019  Constantin Schwarz
@@ -62,7 +63,9 @@ try:
     sock.bind(addr)
     sock.listen(5)
 
-    [RSSServer(addr, sock) for i in range(int(config.config['DEFAULT']['threads']))]
+    handler = RSSRequestHandlerFactory()
+
+    [RSSServer(addr, sock, handler) for i in range(int(config.config['DEFAULT']['threads']))]
     time.sleep(9e9)
 
 except KeyboardInterrupt:

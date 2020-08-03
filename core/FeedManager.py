@@ -20,21 +20,23 @@
 import pickle
 from configparser import ConfigParser
 
-from FeedCreator import Feed
+from core import config
+import os
+import importlib
+import ast
+from core.FeedCreator import Feed
 
-import config, os
 
-class FeedManager():
+class FeedManager:
     def __init__(self):
+        self.secrets = {}
+        self.feeds = {}
         self.feedConfig = ConfigParser()
         if os.path.isfile(config.config['DEFAULT']['feeds']):
             self.feedConfig.read(config.config['DEFAULT']['feeds'], 'utf-8')
         self.readFeeds()
 
-
     def readFeeds(self):
-        self.feeds = {}
-        self.secrets = {}
         for section in self.feedConfig.sections():
             id = self.feedConfig[section].get('id')
             title = self.feedConfig[section].get('title')
@@ -42,7 +44,8 @@ class FeedManager():
             description = self.feedConfig[section].get('description')
             max_items = self.feedConfig[section].getint('max_items')
             itemsfile = self.feedConfig[section].get('items file')
-
+            filter_classes = ast.literal_eval(self.feedConfig[section].get('filters', '[]'))
+            filters = []
             try:
                 f = open(itemsfile, 'rb')
                 items = pickle.load(f)
@@ -50,12 +53,18 @@ class FeedManager():
             except:
                 items = []
 
-            feed = Feed(title, link, description, itemsfile, items=items, maxitems=max_items)
+            for filterclass in filter_classes:
+                splits = filterclass.split('.')
+                module = importlib.import_module("filters.{}".format(splits[0]))
+                fclass = getattr(module, splits[1])
+                filters.append(fclass())
+
+            feed = Feed(title, link, description, itemsfile, items=items, maxitems=max_items, filters=filters)
             self.feeds[id] = feed
 
             self.secrets[id] = self.feedConfig[section].get('secret')
 
-        if not '0' in self.feeds.keys():
+        if '0' not in self.feeds.keys():
             self.feeds['0'] = Feed(
                 title='Fallback feed',
                 link='',
@@ -84,4 +93,3 @@ class FeedManager():
             return secret == self.secrets[id]
         else:
             return False
-
