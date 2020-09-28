@@ -28,8 +28,9 @@ def default_config(path):
     config['DEFAULT'] = {
         'ip': '127.0.0.1',
         'port': '8000',
-        'threads': '100',
-        'feeds': 'feeds.ini'
+        'threads': '10',
+        'feeds': 'feeds.ini',
+        'polling interval': '900'
     }
     with open(path, 'w') as cfgfile:
         config.write(cfgfile)

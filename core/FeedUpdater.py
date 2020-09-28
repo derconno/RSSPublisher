@@ -33,15 +33,34 @@ class Updater(Thread):
             sleep(60)
 
     def do_poll(self, feed: Feed):
+        print("[{}] Updating feed: {}".format(datetime.now(), feed.link))
         last_update = feed.get_latest_item_pubDate()
         polled = feedparser.parse(feed.link)
         for item in polled.entries:
             if datetime.fromtimestamp(mktime(item.published_parsed)) > last_update:
+                title = link = description = author = ''
+                try:
+                    title = item.title
+                except:
+                    pass
+                try:
+                    link = item.link
+                except:
+                    pass
+                try:
+                    description = item.description
+                except:
+                    pass
+                try:
+                    author = item.author
+                except:
+                    pass
+
                 feed.add_Item(
-                    title=item.title,
-                    link=item.link,
-                    description=item.description,
-                    author=item.author,
+                    title=title,
+                    link=link,
+                    description=description,
+                    author=author,
                     pubDate=datetime.fromtimestamp(mktime(item.published_parsed))
                 )
         feed.saveItems()

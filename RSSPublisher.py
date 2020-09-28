@@ -69,7 +69,7 @@ try:
     handler = RSSRequestHandlerFactory(fm)
 
     [RSSServer(addr, sock, handler) for i in range(int(config.config['DEFAULT']['threads']))]
-    Updater(fm)
+    Updater(fm, int(config.config['DEFAULT']['polling interval']))
 
     time.sleep(9e9)
 

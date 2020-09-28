@@ -22,6 +22,8 @@ import hashlib
 import os
 import pickle
 
+from threading import RLock
+
 import PyRSS2Gen
 
 from filters import BaseFilter
@@ -29,6 +31,7 @@ from filters import BaseFilter
 
 class Feed:
     def __init__(self, title, link, description, itemsfile, items=None, maxitems=50, filters=None):
+        self.lock = RLock()
         if filters is None:
             filters = []
         if items is None:
@@ -42,41 +45,53 @@ class Feed:
         self.filters = filters
 
     def add_Item(self, title, link, description, author, pubDate=datetime.datetime.utcnow()):
-        item = PyRSS2Gen.RSSItem(title=title,
-                                 link=link,
-                                 description=description,
-                                 author=author,
-                                 guid=PyRSS2Gen.Guid(
-                                     hashlib.sha1(
-                                         (title +
-                                          link +
-                                          description +
-                                          author +
-                                          pubDate.strftime(
-                                              "%Y-%m-%d %H:%M:%S")).encode()).hexdigest(),
-                                     False),
-                                 pubDate=pubDate)
-        item = self._apply_filters(item)
-        if not item == None:
-            self.items.insert(0, item)
-            self.items = self.items[:self.maxitems]
+        self.lock.acquire()
+        try:
+            item = PyRSS2Gen.RSSItem(title=title,
+                                     link=link,
+                                     description=description,
+                                     author=author,
+                                     guid=PyRSS2Gen.Guid(
+                                         hashlib.sha1(
+                                             (title +
+                                              link +
+                                              description +
+                                              author +
+                                              pubDate.strftime(
+                                                  "%Y-%m-%d %H:%M:%S")).encode()).hexdigest(),
+                                         False),
+                                     pubDate=pubDate)
+            item = self._apply_filters(item)
+            if not item == None:
+                self.items.insert(0, item)
+                self.items = self.items[:self.maxitems]
+        finally:
+            self.lock.release()
 
     def getXml(self):
-        rss = PyRSS2Gen.RSS2(
-            title=self.title,
-            link=self.link,
-            description=self.description,
-            lastBuildDate=datetime.datetime.now(),
-            items=self.items
-        )
+        self.lock.acquire()
+        try:
+            rss = PyRSS2Gen.RSS2(
+                title=self.title,
+                link=self.link,
+                description=self.description,
+                lastBuildDate=datetime.datetime.now(),
+                items=self.items
+            )
+        finally:
+            self.lock.release()
         return rss.to_xml('utf-8')
 
     def saveItems(self):
-        if not os.path.dirname(self.itemsfile) == '':
-            os.makedirs(os.path.dirname(self.itemsfile), exist_ok=True)
-        f = open(self.itemsfile, 'wb')
-        pickle.dump(self.items, f)
-        f.close()
+        self.lock.acquire()
+        try:
+            if not os.path.dirname(self.itemsfile) == '':
+                os.makedirs(os.path.dirname(self.itemsfile), exist_ok=True)
+            f = open(self.itemsfile, 'wb')
+            pickle.dump(self.items, f)
+            f.close()
+        finally:
+            self.lock.release()
 
     def _apply_filters(self, item):
         for filter in self.filters:
